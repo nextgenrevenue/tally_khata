@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base href="$FLUTTER_BASE_HREF">
+  <meta charset="UTF-8">
+  <title>ট্যালি খাতা</title>
+  <link rel="manifest" href="manifest.json">
+  
+  <!-- Firebase SDK (সঠিক ভার্সন) -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js"></script>
+  
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyCigxjHdYfYNDizaSKDGUPCaBs39Ff-awM",
+      authDomain: "asraful-704b9.firebaseapp.com",
+      projectId: "asraful-704b9",
+      storageBucket: "asraful-704b9.firebasestorage.app",
+      messagingSenderId: "418467079550",
+      appId: "1:418467079550:web:9454a5851d477e3ad4bf2f"
+    };
+    
+    firebase.initializeApp(firebaseConfig);
+    console.log('✅ Firebase initialized');
+  </script>
+</head>
+<body>
+  <script src="flutter_bootstrap.js" async></script>
+</body>
+</html>
