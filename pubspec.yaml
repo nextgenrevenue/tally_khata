@@ -4,24 +4,20 @@ publish_to: 'none'
 version: 1.0.0+1
 
 environment:
-  sdk: '>=2.19.2 <4.0.0'
+  sdk: ">=2.19.2 <4.0.0"
 
 dependencies:
   flutter:
     sdk: flutter
-  
-  # Share প্যাকেজ
-  share_plus: ^10.1.4
-  
-  # Firebase প্যাকেজ
-  firebase_core: ^3.8.0
-  firebase_auth: ^5.3.3
-  cloud_firestore: ^5.5.0
-  
-  # অন্যান্য প্যাকেজ
-  google_fonts: ^6.1.0
-  intl: ^0.19.0
-  fl_chart: ^0.69.2
+
+  # প্যাকেজগুলোর ভার্সন Zapp-এর জন্য কমিয়ে দেওয়া হলো
+  share_plus: ^7.0.0
+  firebase_core: ^2.10.0
+  firebase_auth: ^4.4.0
+  cloud_firestore: ^4.6.0
+  google_fonts: ^4.0.0
+  intl: ^0.18.0
+  fl_chart: ^0.60.0
 
 dev_dependencies:
   flutter_test:
