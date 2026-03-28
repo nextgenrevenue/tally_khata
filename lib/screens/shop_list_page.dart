@@ -1,23 +1,59 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'add_entry_screen.dart'; // দোকান এডিট করার জন্য
-import 'create_invoice_page.dart'; // ইনভয়েস তৈরি করার জন্য
+import 'add_entry_screen.dart';
+import 'create_invoice_page.dart';
 
 class ShopListPage extends StatefulWidget {
-  const ShopListPage({super.key});
+  final String businessId;
+  final String businessName;
+  
+  const ShopListPage({
+    super.key, 
+    required this.businessId,
+    required this.businessName,
+  });
 
   @override
   State<ShopListPage> createState() => _ShopListPageState();
 }
 
 class _ShopListPageState extends State<ShopListPage> {
-  final CollectionReference _shopsCollection = 
-      FirebaseFirestore.instance.collection('shops');
+  late final CollectionReference _shopsCollection;
+  late final String _businessId;
+
+  @override
+  void initState() {
+    super.initState();
+    _businessId = widget.businessId;
+    _shopsCollection = FirebaseFirestore.instance
+        .collection('businesses')
+        .doc(_businessId)
+        .collection('shops');
+  }
 
   Future<void> _deleteShop(String shopId) async {
     try {
+      final entries = await _shopsCollection
+          .doc(shopId)
+          .collection('entries')
+          .get();
+          
+      for (var entry in entries.docs) {
+        await entry.reference.delete();
+      }
+      
+      final cashTransactions = await _shopsCollection
+          .doc(shopId)
+          .collection('cash_transactions')
+          .get();
+          
+      for (var cash in cashTransactions.docs) {
+        await cash.reference.delete();
+      }
+      
       await _shopsCollection.doc(shopId).delete();
+      
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -69,6 +105,7 @@ class _ShopListPageState extends State<ShopListPage> {
         builder: (context) => AddEntryScreen(
           shopData: shopData,
           shopId: shopId,
+          businessId: _businessId,
         ),
       ),
     );
@@ -81,7 +118,110 @@ class _ShopListPageState extends State<ShopListPage> {
         builder: (context) => CreateInvoicePage(
           shopData: shop,
           shopId: shopId,
+          businessId: _businessId,
         ),
+      ),
+    );
+  }
+
+  Future<void> _addShop() async {
+    final shopNameController = TextEditingController();
+    final ownerNameController = TextEditingController();
+    final mobileController = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+
+    return showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('${widget.businessName} - নতুন দোকান যোগ করুন'),
+        content: Form(
+          key: formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextFormField(
+                controller: shopNameController,
+                decoration: const InputDecoration(
+                  labelText: 'দোকানের নাম',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.store),
+                ),
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'দোকানের নাম দিন';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: ownerNameController,
+                decoration: const InputDecoration(
+                  labelText: 'মালিকের নাম',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.person),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: mobileController,
+                decoration: const InputDecoration(
+                  labelText: 'মোবাইল নম্বর',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.phone),
+                ),
+                keyboardType: TextInputType.phone,
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('বাতিল'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              if (formKey.currentState!.validate()) {
+                try {
+                  await _shopsCollection.add({
+                    'shopName': shopNameController.text.trim(),
+                    'ownerName': ownerNameController.text.trim(),
+                    'mobile': mobileController.text.trim(),
+                    'userId': FirebaseAuth.instance.currentUser?.uid,
+                    'businessId': _businessId,
+                    'status': 'active',
+                    'createdAt': FieldValue.serverTimestamp(),
+                    'updatedAt': FieldValue.serverTimestamp(),
+                  });
+                  
+                  if (context.mounted) {
+                    Navigator.pop(context);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('${shopNameController.text.trim()} যোগ করা হয়েছে'),
+                        backgroundColor: Colors.green,
+                      ),
+                    );
+                  }
+                } catch (e) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('দোকান যোগ করতে ব্যর্থ: $e'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
+                }
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.green,
+            ),
+            child: const Text('যোগ করুন'),
+          ),
+        ],
       ),
     );
   }
@@ -97,23 +237,18 @@ class _ShopListPageState extends State<ShopListPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('দোকান তালিকা'),
+        title: Text('${widget.businessName} - দোকান তালিকা'),
         backgroundColor: Colors.green,
         actions: [
           IconButton(
             icon: const Icon(Icons.add),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const AddEntryScreen()),
-              );
-            },
+            onPressed: _addShop,
+            tooltip: 'নতুন দোকান যোগ করুন',
           ),
         ],
       ),
       body: StreamBuilder<QuerySnapshot>(
         stream: _shopsCollection
-            .where('userId', isEqualTo: user.uid)
             .orderBy('createdAt', descending: true)
             .snapshots(),
         builder: (context, snapshot) {
@@ -176,35 +311,32 @@ class _ShopListPageState extends State<ShopListPage> {
                       subtitle: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('মালিক: ${data['ownerName'] ?? 'নেই'}'),
-                          Text('মোবাইল: ${data['mobile'] ?? 'নেই'}'),
+                          if (data['ownerName'] != null && data['ownerName'].toString().isNotEmpty)
+                            Text('মালিক: ${data['ownerName']}'),
+                          if (data['mobile'] != null && data['mobile'].toString().isNotEmpty)
+                            Text('মোবাইল: ${data['mobile']}'),
                         ],
                       ),
-                      trailing: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: data['status'] == 'active'
-                                  ? Colors.green.withValues(alpha: 0.1)
-                                  : Colors.red.withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Text(
-                              data['status'] == 'active' ? 'সক্রিয়' : 'নিষ্ক্রিয়',
-                              style: TextStyle(
-                                color: data['status'] == 'active'
-                                    ? Colors.green
-                                    : Colors.red,
-                                fontSize: 12,
-                              ),
-                            ),
+                      trailing: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: data['status'] == 'active'
+                              ? Colors.green.withValues(alpha: 0.1)
+                              : Colors.red.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          data['status'] == 'active' ? 'সক্রিয়' : 'নিষ্ক্রিয়',
+                          style: TextStyle(
+                            color: data['status'] == 'active'
+                                ? Colors.green
+                                : Colors.red,
+                            fontSize: 12,
                           ),
-                        ],
+                        ),
                       ),
                     ),
                     Row(
@@ -213,14 +345,17 @@ class _ShopListPageState extends State<ShopListPage> {
                         IconButton(
                           icon: const Icon(Icons.edit, color: Colors.blue),
                           onPressed: () => _editShop(data, doc.id),
+                          tooltip: 'সম্পাদনা করুন',
                         ),
                         IconButton(
                           icon: const Icon(Icons.delete, color: Colors.red),
                           onPressed: () => _showDeleteConfirmation(doc.id, data['shopName'] ?? ''),
+                          tooltip: 'ডিলিট করুন',
                         ),
                         IconButton(
                           icon: const Icon(Icons.receipt, color: Colors.green),
                           onPressed: () => _createInvoice(data, doc.id),
+                          tooltip: 'ইনভয়েস তৈরি করুন',
                         ),
                       ],
                     ),
