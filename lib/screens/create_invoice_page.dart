@@ -5,11 +5,13 @@ import 'package:flutter/material.dart';
 class CreateInvoicePage extends StatefulWidget {
   final Map<String, dynamic> shopData;
   final String shopId;
+  final String? businessId; 
 
   const CreateInvoicePage({
     super.key,
     required this.shopData,
     required this.shopId,
+    this.businessId,
   });
 
   @override

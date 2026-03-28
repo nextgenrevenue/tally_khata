@@ -1,12 +1,12 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
+// import 'package:intl/intl.dart'; ← এই লাইনটি সরিয়ে দিন
 import 'add_entry_screen.dart';
 import 'reports_screen.dart';
 import 'categories_screen.dart';
 import 'profile_page.dart';
-import 'shop_list_page.dart'; // দোকান তালিকা পেজ ইম্পোর্ট
+import 'shop_list_page.dart';
 import 'create_invoice_page.dart';
 
 // ফিচার পেজ ইম্পোর্ট
@@ -27,24 +27,58 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  final CollectionReference _entriesCollection = 
-      FirebaseFirestore.instance.collection('entries');
+  // final CollectionReference _entriesCollection =  // ← এই লাইনটি কমেন্ট করুন
+  //     FirebaseFirestore.instance.collection('entries');
   final CollectionReference _shopsCollection = 
       FirebaseFirestore.instance.collection('shops');
   
   bool _isLoading = true;
   String _userName = 'ব্যবহারকারী';
   String _currentLocation = '';
-  List<DocumentSnapshot> _entries = [];
-  List<DocumentSnapshot> _recentShops = []; // সাম্প্রতিক দোকান
+  String? _selectedBusinessId;
+  String? _selectedBusinessName;
+  // List<DocumentSnapshot> _entries = [];  // ← এই লাইনটি সরিয়ে দিন
+  List<DocumentSnapshot> _recentShops = [];
 
   @override
   void initState() {
     super.initState();
-    _loadEntries();
+    // _loadEntries();  // ← এই লাইনটি সরিয়ে দিন
     _loadUserData();
     _loadCurrentLocation();
+    _loadSelectedBusiness();
     _loadRecentShops();
+  }
+
+  Future<void> _loadSelectedBusiness() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    try {
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .get();
+      
+      if (userDoc.exists && userDoc.data()!.containsKey('selectedBusinessId')) {
+        final businessId = userDoc.data()!['selectedBusinessId'];
+        
+        final businessDoc = await FirebaseFirestore.instance
+            .collection('businesses')
+            .doc(businessId)
+            .get();
+        
+        if (mounted) {
+          setState(() {
+            _selectedBusinessId = businessId;
+            _selectedBusinessName = businessDoc.data()?['name'] ?? 'এলাকা';
+            _currentLocation = businessDoc.data()?['name'] ?? '';
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint('Error loading selected business: $e');
+    }
   }
 
   Future<void> _loadCurrentLocation() async {
@@ -64,9 +98,9 @@ class _HomeScreenState extends State<HomeScreen> {
             .doc(businessId)
             .get();
             
-        if (businessDoc.exists) {
+        if (businessDoc.exists && mounted) {
           final data = businessDoc.data();
-          if (data != null && mounted) {
+          if (data != null) {
             setState(() {
               _currentLocation = data['name'] ?? '';
             });
@@ -87,19 +121,17 @@ class _HomeScreenState extends State<HomeScreen> {
             .doc(user.uid)
             .get();
         
-        if (userDoc.exists) {
+        if (userDoc.exists && mounted) {
           final data = userDoc.data();
-          if (data != null && mounted) {
+          if (data != null) {
             setState(() {
               _userName = data['name'] ?? user.displayName ?? 'ব্যবহারকারী';
             });
           }
-        } else {
-          if (mounted) {
-            setState(() {
-              _userName = user.displayName ?? 'ব্যবহারকারী';
-            });
-          }
+        } else if (mounted) {
+          setState(() {
+            _userName = user.displayName ?? 'ব্যবহারকারী';
+          });
         }
       } catch (e) {
         debugPrint('Error loading user data: $e');
@@ -112,52 +144,40 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  Future<void> _loadEntries() async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return;
-
-    try {
-      final snapshot = await _entriesCollection
-          .where('userId', isEqualTo: user.uid)
-          .orderBy('date', descending: true)
-          .limit(5) // সর্বোচ্চ ৫টি এন্ট্রি
-          .get();
-
-      if (mounted) {
-        setState(() {
-          _entries = snapshot.docs;
-          _isLoading = false;
-        });
-      }
-    } catch (e) {
-      debugPrint('Error loading entries: $e');
-      if (mounted) setState(() => _isLoading = false);
-    }
-  }
+  // _loadEntries() ফাংশনটি সম্পূর্ণ সরিয়ে দিন
 
   Future<void> _loadRecentShops() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
     try {
-      final snapshot = await _shopsCollection
-          .where('userId', isEqualTo: user.uid)
+      Query query = _shopsCollection.where('userId', isEqualTo: user.uid);
+      
+      if (_selectedBusinessId != null && _selectedBusinessId!.isNotEmpty) {
+        query = query.where('businessId', isEqualTo: _selectedBusinessId);
+      }
+      
+      final snapshot = await query
           .orderBy('createdAt', descending: true)
-          .limit(5) // সর্বোচ্চ ৫টি দোকান
+          .limit(5)
           .get();
 
       if (mounted) {
         setState(() {
           _recentShops = snapshot.docs;
+          _isLoading = false;
         });
       }
     } catch (e) {
       debugPrint('Error loading shops: $e');
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
   Future<void> _refreshLocation() async {
     await _loadCurrentLocation();
+    await _loadSelectedBusiness();
+    await _loadRecentShops();
   }
 
   void _navigateToShopDetail(DocumentSnapshot doc) {
@@ -168,6 +188,7 @@ class _HomeScreenState extends State<HomeScreen> {
         builder: (context) => ShopDetailPage(
           shopData: data,
           shopId: doc.id,
+          businessId: _selectedBusinessId ?? '',
         ),
       ),
     );
@@ -257,8 +278,8 @@ class _HomeScreenState extends State<HomeScreen> {
           ? const Center(child: CircularProgressIndicator())
           : RefreshIndicator(
               onRefresh: () async {
-                await _loadEntries();
                 await _loadRecentShops();
+                await _loadSelectedBusiness();
               },
               child: SingleChildScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),
@@ -348,10 +369,24 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                           TextButton(
                             onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(builder: (context) => const ShopListPage()),
-                              );
+                              if (_selectedBusinessId != null && _selectedBusinessId!.isNotEmpty) {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => ShopListPage(
+                                      businessId: _selectedBusinessId!,
+                                      businessName: _selectedBusinessName ?? 'আমার এলাকা',
+                                    ),
+                                  ),
+                                );
+                              } else {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('প্রথমে একটি এলাকা সিলেক্ট করুন'),
+                                    backgroundColor: Colors.orange,
+                                  ),
+                                );
+                              }
                             },
                             child: const Text('সব দেখুন →'),
                           ),
@@ -452,147 +487,6 @@ class _HomeScreenState extends State<HomeScreen> {
                               );
                             },
                           ),
-
-                    // সাম্প্রতিক লেনদেন শিরোনাম
-                    const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 16),
-                      child: Text(
-                        'সাম্প্রতিক লেনদেন',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-
-                    // এন্ট্রি লিস্ট
-                    _entries.isEmpty
-                        ? Container(
-                            margin: const EdgeInsets.all(16),
-                            padding: const EdgeInsets.all(32),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            child: Column(
-                              children: [
-                                Icon(
-                                  Icons.receipt_long,
-                                  size: 60,
-                                  color: Colors.grey[400],
-                                ),
-                                const SizedBox(height: 10),
-                                Text(
-                                  'কোনো লেনদেন নেই',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    color: Colors.grey[600],
-                                  ),
-                                ),
-                                const SizedBox(height: 5),
-                                Text(
-                                  'নতুন হিসাব যোগ করুন',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    color: Colors.grey[500],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          )
-                        : ListView.builder(
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            padding: const EdgeInsets.all(16),
-                            itemCount: _entries.length,
-                            itemBuilder: (context, index) {
-                              final doc = _entries[index];
-                              final data = doc.data() as Map<String, dynamic>?;
-                              
-                              if (data == null) return const SizedBox();
-                              
-                              final dateStr = data['date'] as String?;
-                              final title = data['title'] as String? ?? '';
-                              final amount = data['amount'] as num? ?? 0;
-                              final category = data['category'] as String? ?? '';
-                              final type = data['type'] as String? ?? 'expense';
-                              
-                              DateTime date;
-                              try {
-                                date = DateTime.parse(dateStr ?? DateTime.now().toIso8601String());
-                              } catch (e) {
-                                date = DateTime.now();
-                              }
-                              
-                              final isIncome = type == 'income';
-
-                              return Card(
-                                margin: const EdgeInsets.only(bottom: 8),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: ListTile(
-                                  leading: CircleAvatar(
-                                    backgroundColor: isIncome 
-                                        ? Colors.green.withValues(alpha: 0.1)
-                                        : Colors.red.withValues(alpha: 0.1),
-                                    child: Icon(
-                                      isIncome ? Icons.arrow_upward : Icons.arrow_downward,
-                                      color: isIncome ? Colors.green : Colors.red,
-                                      size: 20,
-                                    ),
-                                  ),
-                                  title: Text(
-                                    title,
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                  subtitle: Text(
-                                    DateFormat('dd MMM yyyy').format(date),
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: Colors.grey[600],
-                                    ),
-                                  ),
-                                  trailing: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    crossAxisAlignment: CrossAxisAlignment.end,
-                                    children: [
-                                      Text(
-                                        '৳ $amount',
-                                        style: TextStyle(
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.bold,
-                                          color: isIncome ? Colors.green : Colors.red,
-                                        ),
-                                      ),
-                                      if (category.isNotEmpty)
-                                        Text(
-                                          category,
-                                          style: TextStyle(
-                                            fontSize: 10,
-                                            color: Colors.grey[500],
-                                          ),
-                                        ),
-                                    ],
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
-
-                    // সব দেখুন বাটন
-                    if (_entries.length > 5)
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        child: TextButton(
-                          onPressed: () {
-                            Navigator.pushNamed(context, '/reports');
-                          },
-                          child: const Text('সব লেনদেন দেখুন →'),
-                        ),
-                      ),
                   ],
                 ),
               ),
@@ -688,11 +582,13 @@ class _HomeScreenState extends State<HomeScreen> {
 class ShopDetailPage extends StatelessWidget {
   final Map<String, dynamic> shopData;
   final String shopId;
+  final String businessId;
 
   const ShopDetailPage({
     super.key,
     required this.shopData,
     required this.shopId,
+    required this.businessId,
   });
 
   @override
@@ -711,6 +607,7 @@ class ShopDetailPage extends StatelessWidget {
                   builder: (context) => AddEntryScreen(
                     shopData: shopData,
                     shopId: shopId,
+                    businessId: businessId,
                   ),
                 ),
               );
@@ -782,6 +679,7 @@ class ShopDetailPage extends StatelessWidget {
                           builder: (context) => CreateInvoicePage(
                             shopData: shopData,
                             shopId: shopId,
+                            businessId: businessId,
                           ),
                         ),
                       );

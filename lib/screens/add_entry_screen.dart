@@ -5,8 +5,14 @@ import 'package:flutter/material.dart';
 class AddEntryScreen extends StatefulWidget {
   final Map<String, dynamic>? shopData;
   final String? shopId;
+  final String? businessId;
 
-  const AddEntryScreen({super.key, this.shopData, this.shopId});
+    const AddEntryScreen({
+    super.key,
+    this.shopData,
+    this.shopId,
+    this.businessId,  // ← যোগ করুন
+  });
 
   @override
   State<AddEntryScreen> createState() => _AddEntryScreenState();
