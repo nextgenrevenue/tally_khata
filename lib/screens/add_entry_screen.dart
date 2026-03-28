@@ -5,13 +5,13 @@ import 'package:flutter/material.dart';
 class AddEntryScreen extends StatefulWidget {
   final Map<String, dynamic>? shopData;
   final String? shopId;
-  final String? businessId;
+  final String? businessId;  // ← এটি আছে
 
-    const AddEntryScreen({
+  const AddEntryScreen({
     super.key,
     this.shopData,
     this.shopId,
-    this.businessId,  // ← যোগ করুন
+    this.businessId,
   });
 
   @override
@@ -43,88 +43,20 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
     'অন্যান্য'
   ];
 
-final List<String> _areaList = [
-  // ঢাকা বিভাগ (13)
-  'ঢাকা',
-  'গাজীপুর',
-  'নারায়ণগঞ্জ',
-  'মানিকগঞ্জ',
-  'মুন্সিগঞ্জ',
-  'কিশোরগঞ্জ',
-  'টাঙ্গাইল',
-  'ফরিদপুর',
-  'গোপালগঞ্জ',
-  'মাদারিপুর',
-  'শরীয়তপুর',
-  'রাজবাড়ী',
-  'নরসিংদী',
-
-  // চট্টগ্রাম বিভাগ (11)
-  'চট্টগ্রাম',
-  'কক্সবাজার',
-  'রাঙ্গামাটি',
-  'খাগড়াছড়ি',
-  'বান্দরবান',
-  'ফেনী',
-  'ব্রাহ্মণবাড়িয়া',
-  'কুমিল্লা',
-  'চাঁদপুর',
-  'লক্ষ্মীপুর',
-  'নোয়াখালী',
-
-  // রাজশাহী বিভাগ (8)
-  'রাজশাহী',
-  'চাঁপাইনবাবগঞ্জ',
-  'নওগাঁ',
-  'নাটোর',
-  'পাবনা',
-  'সিরাজগঞ্জ',
-  'বগুড়া',
-  'জয়পুরহাট',
-
-  // খুলনা বিভাগ (10)
-  'খুলনা',
-  'বাগেরহাট',
-  'চুয়াডাঙ্গা',
-  'ঝিনাইদহ',
-  'যশোর',
-  'কুষ্টিয়া',
-  'মাগুরা',
-  'মেহেরপুর',
-  'নড়াইল',
-  'সাতক্ষীরা',
-
-  // বরিশাল বিভাগ (6)
-  'বরিশাল',
-  'ভোলা',
-  'ঝালকাঠি',
-  'পটুয়াখালী',
-  'পিরোজপুর',
-  'বরগুনা',
-
-  // সিলেট বিভাগ (4)
-  'সিলেট',
-  'মৌলভীবাজার',
-  'হবিগঞ্জ',
-  'সুনামগঞ্জ',
-
-  // রংপুর বিভাগ (8)
-  'রংপুর',
-  'দিনাজপুর',
-  'গাইবান্ধা',
-  'কুড়িগ্রাম',
-  'লালমনিরহাট',
-  'নীলফামারী',
-  'পঞ্চগড়',
-  'ঠাকুরগাঁও',
-
-  // ময়মনসিংহ বিভাগ (4)
-  'ময়মনসিংহ',
-  'জামালপুর',
-  'শেরপুর',
-  'নেত্রকোণা',
-];
-
+  final List<String> _areaList = [
+    'ঢাকা', 'গাজীপুর', 'নারায়ণগঞ্জ', 'মানিকগঞ্জ', 'মুন্সিগঞ্জ',
+    'কিশোরগঞ্জ', 'টাঙ্গাইল', 'ফরিদপুর', 'গোপালগঞ্জ', 'মাদারিপুর',
+    'শরীয়তপুর', 'রাজবাড়ী', 'নরসিংদী', 'চট্টগ্রাম', 'কক্সবাজার',
+    'রাঙ্গামাটি', 'খাগড়াছড়ি', 'বান্দরবান', 'ফেনী', 'ব্রাহ্মণবাড়িয়া',
+    'কুমিল্লা', 'চাঁদপুর', 'লক্ষ্মীপুর', 'নোয়াখালী', 'রাজশাহী',
+    'চাঁপাইনবাবগঞ্জ', 'নওগাঁ', 'নাটোর', 'পাবনা', 'সিরাজগঞ্জ',
+    'বগুড়া', 'জয়পুরহাট', 'খুলনা', 'বাগেরহাট', 'চুয়াডাঙ্গা',
+    'ঝিনাইদহ', 'যশোর', 'কুষ্টিয়া', 'মাগুরা', 'মেহেরপুর', 'নড়াইল',
+    'সাতক্ষীরা', 'বরিশাল', 'ভোলা', 'ঝালকাঠি', 'পটুয়াখালী', 'পিরোজপুর',
+    'বরগুনা', 'সিলেট', 'মৌলভীবাজার', 'হবিগঞ্জ', 'সুনামগঞ্জ', 'রংপুর',
+    'দিনাজপুর', 'গাইবান্ধা', 'কুড়িগ্রাম', 'লালমনিরহাট', 'নীলফামারী',
+    'পঞ্চগড়', 'ঠাকুরগাঁও', 'ময়মনসিংহ', 'জামালপুর', 'শেরপুর', 'নেত্রকোণা',
+  ];
 
   final List<String> _statusList = ['সক্রিয়', 'নিষ্ক্রিয়'];
 
@@ -155,6 +87,7 @@ final List<String> _areaList = [
 
     try {
       if (widget.shopId != null) {
+        // এডিট মোড
         await FirebaseFirestore.instance
             .collection('shops')
             .doc(widget.shopId)
@@ -179,23 +112,28 @@ final List<String> _areaList = [
           );
         }
       } else {
-        String? businessId;
-        try {
-          final userDoc = await FirebaseFirestore.instance
-              .collection('users')
-              .doc(user.uid)
-              .get();
-          
-          if (userDoc.exists && userDoc.data()!.containsKey('selectedBusinessId')) {
-            businessId = userDoc.data()!['selectedBusinessId'];
+        // নতুন দোকান যোগ - businessId ব্যবহার করুন
+        String? businessId = widget.businessId;  // ← এখানে businessId ব্যবহার করুন
+        
+        // যদি businessId না আসে, তাহলে ইউজার থেকে নিন
+        if (businessId == null) {
+          try {
+            final userDoc = await FirebaseFirestore.instance
+                .collection('users')
+                .doc(user.uid)
+                .get();
+            
+            if (userDoc.exists && userDoc.data()!.containsKey('selectedBusinessId')) {
+              businessId = userDoc.data()!['selectedBusinessId'];
+            }
+          } catch (e) {
+            debugPrint('Error getting businessId: $e');
           }
-        } catch (e) {
-          debugPrint('Error getting businessId: $e');
         }
 
         await FirebaseFirestore.instance.collection('shops').add({
           'userId': user.uid,
-          'businessId': businessId,
+          'businessId': businessId,  // ← এলাকা আইডি
           'shopName': _shopNameController.text.trim(),
           'ownerName': _ownerNameController.text.trim(),
           'mobile': _mobileController.text.trim(),
@@ -251,6 +189,7 @@ final List<String> _areaList = [
           key: _formKey,
           child: Column(
             children: [
+              // দোকানের ছবি
               Center(
                 child: Stack(
                   children: [
@@ -337,9 +276,8 @@ final List<String> _areaList = [
               ),
               const SizedBox(height: 16),
 
-              // এলাকা নির্বাচন - ফিক্সড (initialValue ব্যবহার)
               DropdownButtonFormField<String>(
-                initialValue: _selectedArea,  // ← value এর বদলে initialValue
+                initialValue: _selectedArea,
                 decoration: const InputDecoration(
                   labelText: 'এলাকা', 
                   prefixIcon: Icon(Icons.location_city), 
@@ -361,9 +299,8 @@ final List<String> _areaList = [
               ),
               const SizedBox(height: 16),
 
-              // দোকানের ধরন - ফিক্সড (initialValue ব্যবহার)
               DropdownButtonFormField<String>(
-                initialValue: _selectedShopType,  // ← value এর বদলে initialValue
+                initialValue: _selectedShopType,
                 decoration: const InputDecoration(
                   labelText: 'দোকানের ধরন', 
                   prefixIcon: Icon(Icons.category), 
@@ -385,9 +322,8 @@ final List<String> _areaList = [
               ),
               const SizedBox(height: 16),
 
-              // স্ট্যাটাস - ফিক্সড (initialValue ব্যবহার)
               DropdownButtonFormField<String>(
-                initialValue: _selectedStatus,  // ← value এর বদলে initialValue
+                initialValue: _selectedStatus,
                 decoration: const InputDecoration(
                   labelText: 'স্ট্যাটাস', 
                   prefixIcon: Icon(Icons.flag), 
